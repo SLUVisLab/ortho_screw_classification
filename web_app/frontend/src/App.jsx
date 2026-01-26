@@ -13,6 +13,7 @@ function App() {
 
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
+  const [selectedResult, setSelectedResult] = useState(null)
   const [error, setError] = useState(null)
 
   const handleFileChange = (e, setImg) => {
@@ -29,6 +30,7 @@ function App() {
     setLoading(true)
     setError(null)
     setResult(null)
+    setSelectedResult(null)
 
     try {
       const apBlob = await getCroppedImg(apImage, apCropPixel)
@@ -44,6 +46,10 @@ function App() {
 
       const res = await axios.post(`${API_URL}/predict`, formData)
       setResult(res.data)
+      // Default to the top prediction (first in list)
+      if (res.data.results && res.data.results.length > 0) {
+        setSelectedResult(res.data.results[0])
+      }
 
     } catch (err) {
       console.error(err)
@@ -57,6 +63,7 @@ function App() {
     setApImage(null)
     setLatImage(null)
     setResult(null)
+    setSelectedResult(null)
   }
 
   return (
@@ -115,26 +122,49 @@ function App() {
         </div>
       )}
 
-      {result && (
+      {result && selectedResult && (
         <div className="result-section">
-          <div className="prediction-card">
-            <h2>{result.prediction}</h2>
-            <div className="confidence">Confidence: {(result.confidence * 100).toFixed(1)}%</div>
+          <div className="reset-container">
             <button className="reset-btn" onClick={reset}>Start Over</button>
           </div>
 
-          <h3>Why? Similar Cases:</h3>
-          <div className="similar-list">
-            {result.similar && result.similar.map((item, idx) => (
-              <div key={idx} className="similar-item">
-                <div className="similar-imgs">
-                  <img src={`http://localhost:8000${item.ap_url}`} alt="Sim AP" />
-                  <img src={`http://localhost:8000${item.lat_url}`} alt="Sim Lat" />
+          <h3>Predicted Manufacturers</h3>
+          <div className="prediction-list">
+            {result.results.map((item, idx) => (
+              <div
+                key={idx}
+                className={`prediction-item ${selectedResult.manufacturer === item.manufacturer ? 'selected' : ''}`}
+                onClick={() => setSelectedResult(item)}
+              >
+                <div className="pred-info">
+                  <span className="pred-name">{item.manufacturer}</span>
+                  <span className="pred-conf">{(item.confidence * 100).toFixed(1)}%</span>
                 </div>
-                <div className="similar-label">{item.manufacturer}</div>
-                <div className="similar-score">Sim: {item.score.toFixed(3)}</div>
+                <div className="progress-bar-bg">
+                  <div className="progress-bar-fill" style={{ width: `${item.confidence * 100}%` }}></div>
+                </div>
               </div>
             ))}
+          </div>
+
+          <div className="similar-section">
+            <h3>Similar Cases ({selectedResult.manufacturer})</h3>
+            <div className="similar-list">
+              {selectedResult.similar && selectedResult.similar.length > 0 ? (
+                selectedResult.similar.map((item, idx) => (
+                  <div key={idx} className="similar-item">
+                    <div className="similar-imgs">
+                      <img src={`http://localhost:8000${item.ap_url}`} alt="Sim AP" />
+                      <img src={`http://localhost:8000${item.lat_url}`} alt="Sim Lat" />
+                    </div>
+                    <div className="similar-label">{item.manufacturer}</div>
+                    <div className="similar-score">Sim: {item.score.toFixed(3)}</div>
+                  </div>
+                ))
+              ) : (
+                <p>No similar examples found in index for this manufacturer.</p>
+              )}
+            </div>
           </div>
         </div>
       )}

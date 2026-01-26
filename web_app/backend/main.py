@@ -60,51 +60,56 @@ async def predict(
         # Run Inference
         probs, embedding = wrapper.predict(ap_bytes, lat_bytes)
         
-        # Get Top Prediction
-        top_idx = int(np.argmax(probs))
-        # Map idx back to class name (Hardcoded or could load from metadata)
-        # We need the class map. Let's hardcode the manufacturers from the training code for now
-        # Classes: ['Depuy expedium (Synthes)', 'medtronic solera', 'nuvasive reline', 'seaspine mariner']
-        # Wait, the order depends on the training data sort. 
-        # Correct approach: The `ClassifierWrapper` or `index` should contain the class list.
-        # Let's assume standard sorted order used in training code.
+        # Classes (Must match training order)
         CLASSES = sorted(['Depuy expedium (Synthes)', 'medtronic solera', 'nuvasive reline', 'seaspine mariner'])
-        if top_idx < len(CLASSES):
-            pred_class = CLASSES[top_idx]
-        else:
-            pred_class = "Unknown"
-            
-        confidence = float(probs[top_idx])
         
-        # Similarity Search
-        similar_images = []
+        # Pre-calculate similarity with ALL embeddings
+        sims = None
         if index is not None:
-            # Calculate cosine similarity with all indexed embeddings
-            # embedding: [1024]
-            # index['embeddings']: [N, 1024]
+             query_emb = embedding.reshape(1, -1)
+             sims = cosine_similarity(query_emb, index['embeddings'])[0]
+        
+        results = []
+        
+        for idx, cls in enumerate(CLASSES):
+            confidence = float(probs[idx])
             
-            # Reshape embedding to [1, 1024]
-            query_emb = embedding.reshape(1, -1)
+            # Find similar images SPECIFIC to this class
+            class_similar = []
+            if sims is not None:
+                # Filter indices for this class
+                # Optimization: Could build a lookup map once, but dataset is small enough
+                class_indices = [i for i, m in enumerate(index['metadata']) if m['manufacturer'] == cls]
+                
+                if class_indices:
+                    # Get similarities for these indices
+                    class_sims = sims[class_indices]
+                    
+                    # Top 3 relative to this subset
+                    # argsort is ascending, so take last 3 and reverse
+                    top_k_subset_indices = class_sims.argsort()[-3:][::-1]
+                    
+                    for subset_idx in top_k_subset_indices:
+                        original_idx = class_indices[subset_idx]
+                        meta = index['metadata'][original_idx]
+                        class_similar.append({
+                            'manufacturer': meta['manufacturer'],
+                            'score': float(sims[original_idx]),
+                            'ap_url': f"/images/{meta['ap_path']}",
+                            'lat_url': f"/images/{meta['lat_path']}"
+                        })
+
+            results.append({
+                "manufacturer": cls,
+                "confidence": confidence,
+                "similar": class_similar
+            })
             
-            sims = cosine_similarity(query_emb, index['embeddings'])[0]
-            
-            # Get Top 3 most similar indices
-            top_k_indices = sims.argsort()[-3:][::-1]
-            
-            for idx in top_k_indices:
-                meta = index['metadata'][idx]
-                similar_images.append({
-                    'manufacturer': meta['manufacturer'],
-                    'score': float(sims[idx]),
-                    'ap_url': f"/images/{meta['ap_path']}",
-                    'lat_url': f"/images/{meta['lat_path']}"
-                })
+        # Sort results by confidence descending
+        results.sort(key=lambda x: x['confidence'], reverse=True)
         
         return {
-            "prediction": pred_class,
-            "confidence": confidence,
-            "probabilities": {cls: float(p) for cls, p in zip(CLASSES, probs)},
-            "similar": similar_images
+            "results": results
         }
         
     except Exception as e:
