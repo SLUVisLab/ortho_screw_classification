@@ -74,7 +74,10 @@ function App() {
   return (
     <div className="app-container">
       <header>
-        <h1><span>OrthoScrew</span> ID</h1>
+        <div className="logo-container">
+          <img src="/logo.png" alt="OrthoScrew Logo" className="app-logo" />
+          <h1><span>OrthoScrew</span> ID</h1>
+        </div>
       </header>
 
       {!result && (
