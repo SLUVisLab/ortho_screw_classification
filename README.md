@@ -21,12 +21,18 @@ This repository contains code to train and benchmark three different approaches 
 
 ## Setup
 
-1.  **Install Dependencies**:
+1.  **Create and Activate Virtual Environment**:
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate
+    ```
+
+2.  **Install Dependencies**:
     ```bash
     pip install -r requirements.txt
     ```
 
-2.  **Prepare Data**:
+3.  **Prepare Data**:
     *   You need the path to the directory containing `metadata_summary.csv` and the image subfolders (e.g., `full_data`).
     *   The scripts expect the CSV to have columns: `manufacturer`, `patient_number`, `view_position` ('AP'/'LATERAL'), and `relative_file_path`.
 
