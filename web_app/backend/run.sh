@@ -10,6 +10,12 @@ export DATA_DIR="../../../full_images_with_masks_batch_1"
 # Point this to where you want the index file saved/loaded from
 export INDEX_PATH="embeddings.pkl"
 
+if [ ! -f "$MODEL_PATH" ]; then
+    echo "Error: Model file not found at $MODEL_PATH"
+    echo "Please run training first: python ../../original_classifier/train.py --data_dir $DATA_DIR"
+    exit 1
+fi
+
 if [ "$1" == "index" ]; then
     echo "Running Indexer..."
     # Generate index

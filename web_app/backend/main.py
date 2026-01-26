@@ -85,19 +85,27 @@ async def predict(
                     # Get similarities for these indices
                     class_sims = sims[class_indices]
                     
-                    # Top 3 relative to this subset
-                    # argsort is ascending, so take last 3 and reverse
-                    top_k_subset_indices = class_sims.argsort()[-3:][::-1]
+                    # Sort by similarity descending
+                    sorted_subset_args = class_sims.argsort()[::-1]
                     
-                    for subset_idx in top_k_subset_indices:
+                    seen_patients = set()
+                    
+                    for subset_idx in sorted_subset_args:
+                        if len(class_similar) >= 3:
+                            break
+                            
                         original_idx = class_indices[subset_idx]
                         meta = index['metadata'][original_idx]
-                        class_similar.append({
-                            'manufacturer': meta['manufacturer'],
-                            'score': float(sims[original_idx]),
-                            'ap_url': f"/images/{meta['ap_path']}",
-                            'lat_url': f"/images/{meta['lat_path']}"
-                        })
+                        pid = meta['patient_number']
+                        
+                        if pid not in seen_patients:
+                            seen_patients.add(pid)
+                            class_similar.append({
+                                'manufacturer': meta['manufacturer'],
+                                'score': float(sims[original_idx]),
+                                'ap_url': f"/images/{meta['ap_path']}",
+                                'lat_url': f"/images/{meta['lat_path']}"
+                            })
 
             results.append({
                 "manufacturer": cls,
