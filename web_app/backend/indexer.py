@@ -46,35 +46,35 @@ def index_dataset(data_dir, model_path, output_path):
         # Let's take the first available pair for each patient to represent that patient/class.
         # Or maybe index multiple? Let's index ONE pair per patient to keep index small and diverse.
         
-        ap_row = ap_rows.iloc[0]
-        lat_row = lat_rows.iloc[0]
-        
-        ap_path = os.path.join(data_dir, ap_row['relative_file_path'])
-        lat_path = os.path.join(data_dir, lat_row['relative_file_path'])
-        
-        if not os.path.exists(ap_path) or not os.path.exists(lat_path):
-            continue
-            
-        try:
-            # We need to pass BYTES to the wrapper
-            with open(ap_path, 'rb') as f:
-                ap_bytes = f.read()
-            with open(lat_path, 'rb') as f:
-                lat_bytes = f.read()
+        # Index ALL valid combinations of AP/Lateral for this patient
+        for _, ap_row in ap_rows.iterrows():
+            for _, lat_row in lat_rows.iterrows():
+                ap_path = os.path.join(data_dir, ap_row['relative_file_path'])
+                lat_path = os.path.join(data_dir, lat_row['relative_file_path'])
                 
-            _, embedding = wrapper.predict(ap_bytes, lat_bytes)
-            
-            embeddings.append(embedding)
-            metadata.append({
-                'patient_number': pid,
-                'manufacturer': manufacturer,
-                'ap_path': ap_row['relative_file_path'], # Store relative path for frontend to serve
-                'lat_path': lat_row['relative_file_path']
-            })
-            
-        except Exception as e:
-            print(f"Error processing patient {pid}: {e}")
-            continue
+                if not os.path.exists(ap_path) or not os.path.exists(lat_path):
+                    continue
+                    
+                try:
+                    # We need to pass BYTES to the wrapper
+                    with open(ap_path, 'rb') as f:
+                        ap_bytes = f.read()
+                    with open(lat_path, 'rb') as f:
+                        lat_bytes = f.read()
+                        
+                    _, embedding = wrapper.predict(ap_bytes, lat_bytes)
+                    
+                    embeddings.append(embedding)
+                    metadata.append({
+                        'patient_number': pid,
+                        'manufacturer': manufacturer,
+                        'ap_path': ap_row['relative_file_path'],
+                        'lat_path': lat_row['relative_file_path']
+                    })
+                    
+                except Exception as e:
+                    print(f"Error processing patient {pid}: {e}")
+                    continue
 
     # Save Index
     index_data = {
