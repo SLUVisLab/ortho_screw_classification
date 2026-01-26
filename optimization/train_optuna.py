@@ -193,7 +193,16 @@ def main():
     parser.add_argument('--data_dir', type=str, required=True)
     parser.add_argument('--trials', type=int, default=20)
     parser.add_argument('--epochs', type=int, default=15)
+    parser.add_argument('--gpu_id', type=int, default=0, help='ID of GPU to use if CUDA is available')
     args = parser.parse_args()
+    
+    # ... (data setup) ... (unchanged lines will be matched by context, wait, replace_file_content needs exact target)
+    
+    # I should target the block where device is defined.
+    # The tool doesn't support multiple disjoint edits in one go easily unless I match a large block or use multi_replace.
+    # I will use multi_replace_file_content if I need to edit two places.
+    # Actually, args are parsed at top of main, device is defined later.
+    # Let's use multi_replace.
     
     # --- Data Setup ---
     root_dir = args.data_dir
@@ -244,7 +253,16 @@ def main():
     train_dataset = ScrewDataset(train_df, root_dir, transform=train_transform)
     test_dataset = ScrewDataset(test_df, root_dir, transform=test_transform, samples_per_patient=10)
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
+    if torch.cuda.is_available():
+        device = torch.device(f'cuda:{args.gpu_id}')
+        print(f"Using GPU: {torch.cuda.get_device_name(args.gpu_id)} (ID: {args.gpu_id})")
+    elif torch.backends.mps.is_available():
+        device = torch.device('mps')
+        print("Using MPS")
+    else:
+        device = torch.device('cpu')
+        print("Using CPU")
+        
     num_classes = len(train_dataset.manufacturers)
     
     # --- Optuna Study ---
