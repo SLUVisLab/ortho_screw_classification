@@ -107,9 +107,9 @@ function App() {
 
           <div className="disclaimer">
             <p>
-              <strong>Disclaimer:</strong> This tool is for educational and assistive purposes only.
-              Final identification and clinical verification must be performed by a qualified medical professional.
-              AI models can make errors.
+              <strong>Disclaimer:</strong> This tool is provided for assistive use only and does not constitute medical advice or diagnosis.
+              AI predictions may contain errors. The operating physician assumes full responsibility for the final identification of any implant
+              and must independently verify results against official manufacturer references.
             </p>
           </div>
         </div>
