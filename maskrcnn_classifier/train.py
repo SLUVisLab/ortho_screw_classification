@@ -327,7 +327,7 @@ def main():
     # Configuration
     CSV_PATH = os.path.join(args.data_dir, 'metadata_summary.csv')
     ROOT_DIR = args.data_dir
-    BATCH_SIZE = 2  # Reduced from 8 - Mask R-CNN is very memory intensive
+    BATCH_SIZE = 16  # Increased for A100 80GB
     EPOCHS = 50
     LR = 1e-4
     
@@ -384,9 +384,9 @@ def main():
     
     # DataLoaders
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, 
-                              num_workers=2, collate_fn=collate_fn)  # Reduced workers
+                              num_workers=8, collate_fn=collate_fn)  
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False,
-                             num_workers=2, collate_fn=collate_fn)
+                             num_workers=8, collate_fn=collate_fn)
     
     # Model
     model = DualViewMaskRCNN(num_classes)

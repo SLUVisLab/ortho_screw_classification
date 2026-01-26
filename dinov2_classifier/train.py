@@ -79,7 +79,7 @@ def main():
     # --- Configuration ---
     CSV_PATH = os.path.join(args.data_dir, 'metadata_summary.csv')
     ROOT_DIR = args.data_dir
-    BATCH_SIZE = 16 
+    BATCH_SIZE = 128 # Increased for A100 80GB
     EPOCHS = 50
     LR = 1e-4
     
@@ -161,8 +161,8 @@ def main():
     sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
     
     # Loaders
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, sampler=sampler, collate_fn=collate_fn, num_workers=2)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn, num_workers=2)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, sampler=sampler, collate_fn=collate_fn, num_workers=8)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn, num_workers=8)
     
     # Model
     num_classes = len(manufacturers)
