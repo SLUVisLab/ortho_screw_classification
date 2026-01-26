@@ -91,13 +91,14 @@ function App() {
             )}
           </div>
 
-          <div className="actions">
+          {/* Replaced the original 'actions' div and its content */}
+          <div className="process-actions">
             <button
-              className="analyze-btn"
-              disabled={!apImage || !latImage || loading}
+              className="process-button"
               onClick={analyze}
+              disabled={loading}
             >
-              {loading ? 'Analyzing...' : 'Identify Screw'}
+              {loading ? 'Processing...' : 'Identify Manufacturer'} {/* Changed text */}
             </button>
             {(apImage || latImage) && <button className="reset-btn" onClick={reset}>Reset</button>}
           </div>

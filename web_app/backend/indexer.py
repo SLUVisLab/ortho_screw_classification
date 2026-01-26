@@ -62,15 +62,29 @@ def index_dataset(data_dir, model_path, output_path):
                     with open(lat_path, 'rb') as f:
                         lat_bytes = f.read()
                         
-                    _, embedding = wrapper.predict(ap_bytes, lat_bytes)
-                    
+                    # 1. Canonical Embedding (No augmentation) - Good for exact matches
+                    _, embedding = wrapper.predict(ap_bytes, lat_bytes, augment=False)
                     embeddings.append(embedding)
                     metadata.append({
                         'patient_number': pid,
                         'manufacturer': manufacturer,
                         'ap_path': ap_row['relative_file_path'],
-                        'lat_path': lat_row['relative_file_path']
+                        'lat_path': lat_row['relative_file_path'],
+                        'augmented': False
                     })
+
+                    # 2. Augmented Embeddings (Simulate different crops/rotations)
+                    # Generate 10 variations to cover the visual space better
+                    for _ in range(10):
+                        _, embedding = wrapper.predict(ap_bytes, lat_bytes, augment=True)
+                        embeddings.append(embedding)
+                        metadata.append({
+                            'patient_number': pid,
+                            'manufacturer': manufacturer,
+                            'ap_path': ap_row['relative_file_path'],
+                            'lat_path': lat_row['relative_file_path'],
+                            'augmented': True
+                        })
                     
                 except Exception as e:
                     print(f"Error processing patient {pid}: {e}")
