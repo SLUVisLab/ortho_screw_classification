@@ -105,3 +105,17 @@ header {
   text-align: center;
   margin-top: 10px;
 }
+
+.disclaimer {
+  margin-top: 30px;
+  padding: 15px;
+  border-top: 1px solid #333;
+  color: #888;
+  font-size: 0.8rem;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.disclaimer strong {
+  color: #aaa;
+}

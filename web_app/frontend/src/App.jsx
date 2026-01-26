@@ -104,6 +104,14 @@ function App() {
           </div>
 
           {error && <div className="error">{error}</div>}
+
+          <div className="disclaimer">
+            <p>
+              <strong>Disclaimer:</strong> This tool is for educational and assistive purposes only.
+              Final identification and clinical verification must be performed by a qualified medical professional.
+              AI models can make errors.
+            </p>
+          </div>
         </div>
       )}
 
