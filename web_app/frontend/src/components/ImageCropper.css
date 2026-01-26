@@ -1,28 +1,49 @@
 .cropper-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    margin-bottom: 20px;
-    width: 100%;
+    height: 100%;
+}
+
+.cropper-container h3 {
+    margin: 0 0 15px 0;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .crop-area {
     position: relative;
     width: 100%;
     height: 300px;
-    background: #333;
-    border-radius: 8px;
+    background: #000;
+    border-radius: var(--radius-md);
+    /* 12px */
     overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
 .controls {
-    margin-top: 10px;
-    width: 100%;
+    margin-top: 20px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
+    background: var(--bg-primary);
+    /* Darker inset for controls */
+    padding: 10px 15px;
+    border-radius: 8px;
+}
+
+.controls label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
 }
 
 .zoom-range {
-    flex-grow: 1;
+    width: 100%;
+    accent-color: var(--accent-action);
+    /* Uses the bright blue */
+    cursor: pointer;
 }
