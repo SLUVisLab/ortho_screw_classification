@@ -1,0 +1,28 @@
+.cropper-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.crop-area {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    background: #333;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.controls {
+    margin-top: 10px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zoom-range {
+    flex-grow: 1;
+}
