@@ -1,25 +1,28 @@
 :root {
-  --bg-primary: #0f172a;
-  /* Slate 900 */
-  --bg-secondary: #1e293b;
-  /* Slate 800 */
-  --bg-tertiary: #334155;
-  /* Slate 700 */
+  --bg-primary: #f8fafc;
+  /* Slate 50 */
+  --bg-secondary: #ffffff;
+  /* White */
+  --bg-tertiary: #f1f5f9;
+  /* Slate 100 */
   --accent-primary: #003DA5;
   /* SLU Blue */
-  --accent-action: #3b82f6;
-  /* Bright Blue for controls */
-  --accent-action-hover: #2563eb;
-  --text-primary: #f8fafc;
-  /* Slate 50 */
-  --text-secondary: #94a3b8;
-  /* Slate 400 */
-  --border-color: #334155;
+  --accent-action: #003DA5;
+  /* SLU Blue for buttons */
+  --accent-action-hover: #002f80;
+  --text-primary: #0f172a;
+  /* Slate 900 */
+  --text-secondary: #64748b;
+  /* Slate 500 */
+  --border-color: #e2e8f0;
+  /* Slate 200 */
   --success: #10b981;
   /* Emerald 500 */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   --radius-md: 12px;
+  --radius-lg: 16px;
 }
 
 body {
@@ -29,8 +32,8 @@ body {
 }
 
 .app-container {
-  max-width: 800px;
-  /* Use full width on mobile but cap it slightly wider */
+  max-width: 600px;
+  /* Constrain width for better mobile/tablet feel */
   margin: 0 auto;
   padding: 20px;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -39,29 +42,34 @@ body {
 
 header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border-color);
 }
 
 header h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--accent-primary);
   margin: 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
-header h1 span {
-  color: var(--accent-action);
-  /* Highlight 'ID' or part of name if desired, or just keep white */
+header h1::before {
+  content: "🔩";
+  /* Screw icon */
+  font-size: 1.5rem;
 }
 
 /* --- Input Section --- */
 .input-section {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .view-block {
@@ -72,65 +80,137 @@ header h1 span {
   border: 1px solid var(--border-color);
 }
 
+/* Custom File Input Styling */
 .upload-box {
-  border: 2px dashed var(--border-color);
-  padding: 40px;
+  position: relative;
   text-align: center;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.upload-box:hover {
-  border-color: var(--accent-action);
-  background: rgba(59, 130, 246, 0.05);
 }
 
 .upload-box label {
   display: block;
-  font-size: 1.1rem;
-  font-weight: 500;
-  margin-bottom: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 15px;
   color: var(--text-primary);
 }
 
-.upload-box input {
-  width: 100%;
-  color: var(--text-secondary);
+.custom-file-upload {
+  display: inline-block;
+  padding: 12px 24px;
+  cursor: pointer;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-radius: 50px;
+  /* Pill shape */
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+  width: 80%;
+  /* Wide button for mobile */
+  margin: 0 auto;
+  /* Centering */
+}
+
+/* --- Modal --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  position: relative;
+  width: 90vw;
+  height: 80vh;
+  background: black;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.modal-cropper-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-file-upload:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+/* Hide default file input */
+.upload-box input[type="file"] {
+  position: absolute;
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  z-index: -1;
 }
 
 /* --- Buttons --- */
 .process-actions {
   margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
 }
 
 .process-button {
   width: 100%;
-  padding: 16px;
-  background: var(--accent-primary);
+  padding: 18px;
+  /* Larger touch target */
+  background: var(--accent-action);
   color: white;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s;
-  box-shadow: var(--shadow-md);
+  transition: transform 0.1s, box-shadow 0.2s;
+  box-shadow: var(--shadow-lg);
 }
 
 .process-button:hover {
-  background: #002f80;
-  /* Darker SLU Blue */
+  background: var(--accent-action-hover);
+  transform: translateY(-2px);
+}
+
+.process-button:active {
+  transform: translateY(0);
 }
 
 .process-button:disabled {
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
+  background: var(--text-secondary);
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .reset-btn {
@@ -145,9 +225,9 @@ header h1 span {
 }
 
 .reset-btn:hover {
-  color: var(--text-primary);
-  border-color: var(--text-secondary);
-  background: var(--bg-tertiary);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background: #eff6ff;
 }
 
 .reset-container {
@@ -176,19 +256,19 @@ header h1 span {
   transition: all 0.2s;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .prediction-item:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
-  border-color: var(--accent-action);
+  border-color: var(--accent-primary);
 }
 
 .prediction-item.selected {
-  border-color: var(--accent-action);
-  background: #1e3a8a;
-  /* Slate 900 with blue tint? Or use SLU blue tint */
-  background: linear-gradient(90deg, rgba(0, 61, 165, 0.3) 0%, rgba(30, 41, 59, 1) 100%);
+  border-color: var(--accent-primary);
+  background: #eff6ff;
+  /* Light blue tint */
 }
 
 .pred-info {
@@ -200,20 +280,21 @@ header h1 span {
 }
 
 .pred-name {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1.1rem;
+  color: var(--text-primary);
 }
 
 .pred-conf {
   font-family: monospace;
-  color: var(--accent-action);
+  color: var(--accent-primary);
   font-weight: 700;
 }
 
 .progress-bar-bg {
-  height: 6px;
-  background: var(--bg-primary);
-  border-radius: 3px;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
   overflow: hidden;
   position: relative;
   z-index: 2;
@@ -222,21 +303,20 @@ header h1 span {
 .progress-bar-fill {
   height: 100%;
   background: var(--success);
-  /* Use Green for confidence */
-  border-radius: 3px;
+  border-radius: 4px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* --- Similar Section --- */
 .similar-section h3 {
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   color: var(--text-secondary);
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .similar-list {
@@ -245,15 +325,16 @@ header h1 span {
   gap: 16px;
   padding-bottom: 20px;
   scrollbar-width: thin;
-  scrollbar-color: var(--bg-tertiary) transparent;
+  scrollbar-color: var(--text-secondary) transparent;
 }
 
 .similar-item {
-  min-width: 220px;
+  min-width: 200px;
   background: var(--bg-secondary);
   padding: 12px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .similar-imgs {
@@ -268,11 +349,14 @@ header h1 span {
   width: 100px;
   height: 100px;
   object-fit: cover;
-  transition: transform 0.3s;
+  transition: transform 0.3s, border-color 0.2s;
+  cursor: zoom-in;
+  border: 2px solid transparent;
 }
 
 .similar-imgs img:hover {
-  transform: scale(1.1);
+  transform: scale(1.05);
+  border-color: var(--accent-primary);
 }
 
 .similar-label {
@@ -287,15 +371,69 @@ header h1 span {
   color: var(--text-secondary);
 }
 
+/* --- Modal --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  position: relative;
+  width: 90vw;
+  height: 80vh;
+  background: black;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.modal-cropper-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 /* --- Utilities --- */
 .error {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  background: #fef2f2;
   padding: 15px;
   border-radius: 8px;
   text-align: center;
   margin-top: 20px;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border: 1px solid #fee2e2;
+  font-weight: 500;
 }
 
 .disclaimer {
@@ -303,7 +441,7 @@ header h1 span {
   padding: 24px;
   border-top: 1px solid var(--border-color);
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-align: center;
   line-height: 1.6;
 }

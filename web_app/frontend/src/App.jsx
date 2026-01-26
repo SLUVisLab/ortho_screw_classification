@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import axios from 'axios'
+import Cropper from 'react-easy-crop'
 import ImageCropper from './components/ImageCropper'
 import { getCroppedImg } from './utils/cropUtils'
 import './App.css'
@@ -14,6 +15,9 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [selectedResult, setSelectedResult] = useState(null)
+  const [modalImage, setModalImage] = useState(null)
+  const [modalZoom, setModalZoom] = useState(1)
+  const [modalCrop, setModalCrop] = useState({ x: 0, y: 0 }) // Required by Cropper
   const [error, setError] = useState(null)
 
   const handleFileChange = (e, setImg) => {
@@ -23,6 +27,7 @@ function App() {
       reader.readAsDataURL(e.target.files[0])
     }
   }
+
 
   const analyze = async () => {
     if (!apImage || !latImage || !apCropPixel || !latCropPixel) return
@@ -69,7 +74,7 @@ function App() {
   return (
     <div className="app-container">
       <header>
-        <h1>OrthoScrew ID</h1>
+        <h1><span>OrthoScrew</span> ID</h1>
       </header>
 
       {!result && (
@@ -78,8 +83,11 @@ function App() {
           <div className="view-block">
             {!apImage ? (
               <div className="upload-box">
-                <label>Upload AP View</label>
-                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setApImage)} />
+                <label>AP View</label>
+                <label className="custom-file-upload">
+                  Choose File
+                  <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setApImage)} />
+                </label>
               </div>
             ) : (
               <ImageCropper image={apImage} label="Crop AP Screw" onCropChange={setApCropPixel} />
@@ -90,8 +98,11 @@ function App() {
           <div className="view-block">
             {!latImage ? (
               <div className="upload-box">
-                <label>Upload Lateral View</label>
-                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setLatImage)} />
+                <label>Lateral View</label>
+                <label className="custom-file-upload">
+                  Choose File
+                  <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setLatImage)} />
+                </label>
               </div>
             ) : (
               <ImageCropper image={latImage} label="Crop Lateral Screw" onCropChange={setLatCropPixel} />
@@ -154,8 +165,16 @@ function App() {
                 selectedResult.similar.map((item, idx) => (
                   <div key={idx} className="similar-item">
                     <div className="similar-imgs">
-                      <img src={`http://localhost:8000${item.ap_url}`} alt="Sim AP" />
-                      <img src={`http://localhost:8000${item.lat_url}`} alt="Sim Lat" />
+                      <img
+                        src={`http://localhost:8000${item.ap_url}`}
+                        alt="Sim AP"
+                        onClick={() => { setModalImage(`http://localhost:8000${item.ap_url}`); setModalZoom(1); }}
+                      />
+                      <img
+                        src={`http://localhost:8000${item.lat_url}`}
+                        alt="Sim Lat"
+                        onClick={() => { setModalImage(`http://localhost:8000${item.lat_url}`); setModalZoom(1); }}
+                      />
                     </div>
                     <div className="similar-label">{item.manufacturer}</div>
                     <div className="similar-score">Sim: {item.score.toFixed(3)}</div>
@@ -164,6 +183,27 @@ function App() {
               ) : (
                 <p>No similar examples found in index for this manufacturer.</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Modal */}
+      {modalImage && (
+        <div className="modal-overlay" onClick={() => setModalImage(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setModalImage(null)}>×</button>
+            <div className="modal-cropper-wrapper">
+              <Cropper
+                image={modalImage}
+                crop={modalCrop}
+                zoom={modalZoom}
+                onCropChange={setModalCrop}
+                onZoomChange={setModalZoom}
+                showGrid={false}
+                restrictPosition={false}
+                style={{ containerStyle: { background: 'rgba(0,0,0,0.8)' } }}
+              />
             </div>
           </div>
         </div>
