@@ -18,6 +18,7 @@ const ImageCropper = ({ image, onCropChange, label }) => {
                     image={image}
                     crop={crop}
                     zoom={zoom}
+                    maxZoom={10}
                     aspect={1}
                     onCropChange={setCrop}
                     onCropComplete={onCropComplete}
@@ -30,7 +31,7 @@ const ImageCropper = ({ image, onCropChange, label }) => {
                     type="range"
                     value={zoom}
                     min={1}
-                    max={3}
+                    max={10}
                     step={0.1}
                     aria-labelledby="Zoom"
                     onChange={(e) => setZoom(e.target.value)}
