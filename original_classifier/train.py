@@ -152,7 +152,10 @@ def main():
     train_losses = []
     train_accs = []
     test_losses = []
+    test_losses = []
     test_accs = []
+    
+    best_acc = 0.0
 
     print("Starting training...")
     for epoch in range(EPOCHS):
@@ -196,6 +199,12 @@ def main():
         test_acc, test_loss = evaluate_balanced(model, test_dataset, device, epoch, criterion)
         test_accs.append(test_acc)
         test_losses.append(test_loss)
+        
+        # Save Best Model
+        if test_acc > best_acc:
+            best_acc = test_acc
+            torch.save(model.state_dict(), 'original_classifier_best.pth')
+            print(f"New best accuracy: {best_acc:.2f}%. Model saved to original_classifier_best.pth")
 
     # --- Plotting ---
     plt.figure(figsize=(12, 5))

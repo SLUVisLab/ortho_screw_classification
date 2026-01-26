@@ -403,7 +403,10 @@ def main():
     # Metrics tracking
     train_losses = []
     train_accs = []
+    train_accs = []
     test_accs = []
+    
+    best_acc = 0.0
     
     for epoch in range(EPOCHS):
         model.train()
@@ -468,8 +471,15 @@ def main():
                 total += labels.size(0)
         
         test_acc = 100 * correct / total
+        test_acc = 100 * correct / total
         test_accs.append(test_acc)
         print(f"Test Accuracy: {test_acc:.2f}%")
+        
+        # Save Best Model
+        if test_acc > best_acc:
+            best_acc = test_acc
+            torch.save(model.state_dict(), 'maskrcnn_dual_view_best.pth')
+            print(f"New best accuracy: {test_acc:.2f}%. Model saved to maskrcnn_dual_view_best.pth")
     
     # Save
     torch.save(model.state_dict(), 'maskrcnn_dual_view.pth')
