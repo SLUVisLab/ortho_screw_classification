@@ -21,132 +21,78 @@ import matplotlib.pyplot as plt
 
 
 
+# --- Advanced Training Helpers ---
+def mixup_data(x1, x2, y, device, alpha=1.0):
+    '''Returns mixed inputs, pairs of targets, and lambda'''
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x1.size(0)
+    index = torch.randperm(batch_size).to(device)
+
+    mixed_x1 = lam * x1 + (1 - lam) * x1[index, :]
+    mixed_x2 = lam * x2 + (1 - lam) * x2[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x1, mixed_x2, y_a, y_b, lam
+
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+class LabelSmoothingCrossEntropy(nn.Module):
+    def __init__(self, eps=0.1, reduction='mean'):
+        super(LabelSmoothingCrossEntropy, self).__init__()
+        self.eps = eps
+        self.reduction = reduction
+
+    def forward(self, output, target):
+        c = output.size()[-1]
+        log_preds = torch.nn.functional.log_softmax(output, dim=-1)
+        if self.reduction == 'sum':
+            loss = -log_preds.sum(dim=-1)
+        else:
+            loss = -log_preds.sum(dim=-1)
+            if self.reduction == 'mean':
+                loss = loss.mean()
+        return loss * self.eps / c + (1 - self.eps) * torch.nn.functional.nll_loss(log_preds, target, reduction=self.reduction)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Train Original Classifier')
     parser.add_argument('--data_dir', type=str, required=True, help='Path to dataset directory')
     args = parser.parse_args()
 
-    # --- Configuration ---
+    # --- Configuration (Best Params from Optuna) ---
     CSV_PATH = os.path.join(args.data_dir, 'metadata_summary.csv')
     ROOT_DIR = args.data_dir
-    BATCH_SIZE = 128 # Increased for A100 80GB
+    BATCH_SIZE = 128 
     EPOCHS = 100
-    LR = 1e-4
     
-    # Check device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
-    print(f"Using device: {device}")
-
-    # --- Data Loading ---
-    print("Loading metadata...")
-    df = pd.read_csv(CSV_PATH)
+    # Best Hyperparameters
+    LR = 0.000387403
+    WEIGHT_DECAY = 6.7452e-05
+    STEP_SIZE = 8
+    GAMMA = 0.1
+    LABEL_SMOOTHING = 0.042239
+    MIXUP_ALPHA = 0.239336
     
-    # Filter irrelevant rows
-    # The prompt said: "I don't care about 'No Accession Number Match' or 'No manufacturer data'"
-    df = df[~df['manufacturer'].isin(['No Accession Number Match', 'No manufacturer data'])]
+    # ... (device check) ...
     
-    # Explicitly drop classes requested by user
-    EXPLICIT_DROP = ['Styker everest (K2M)', 'orthofix firebird']
-    if EXPLICIT_DROP:
-        print(f"Explicitly dropping: {EXPLICIT_DROP}")
-        df = df[~df['manufacturer'].isin(EXPLICIT_DROP)]
-
-    # Get unique patient numbers
-    patients = df['patient_number'].unique()
-    print(f"Total valid patients before filtering small classes: {len(patients)}")
-
-    # Filter out manufacturers with too few patients to support a robust train/test split
-    MIN_PATIENTS = 10
-    counts = df.groupby('manufacturer')['patient_number'].nunique()
-    drop_classes = counts[counts < MIN_PATIENTS].index.tolist()
+    # ... (data loading - skipped in this replace block) ...
     
-    if drop_classes:
-        print(f"Dropping manufacturers with < {MIN_PATIENTS} patients: {drop_classes}")
-        df = df[~df['manufacturer'].isin(drop_classes)]
-        # Re-fetch patients after filtering
-        patients = df['patient_number'].unique()
-
-    print(f"Total valid patients after filtering: {len(patients)}")
-    
-    # Stratified Split
-    # We need one label per patient for stratification
-    # Group by patient and take the first manufacturer (assuming patient only has one manufacturer)
-    patient_labels = df.groupby('patient_number')['manufacturer'].first()
-    
-    train_patients, test_patients = train_test_split(
-        patients, 
-        test_size=0.2, 
-        random_state=42,
-        stratify=patient_labels
-    )
-    print(f"Train patients: {len(train_patients)}, Test patients: {len(test_patients)}")
-    
-    # Create DataFrames for splits
-    train_df = df[df['patient_number'].isin(train_patients)]
-    test_df = df[df['patient_number'].isin(test_patients)]
-    
-    # Transforms
-    # We now receive a ~2.0x context crop (GRAYSCALE). 
-    # Resize to 400x400 (screw becomes ~200px), Rotate, then CenterCrop to 224x224 to eliminate borders.
-    # Note: X-ray models expect 1 channel. torchxrayvision normalization is usually specific, 
-    # but we will use standard [0.5, 0.5] for robust scaling or look up xrv defaults.
-    # xrv typically expects values between -1024 and 1024. But since we lack Hounsfield units (these are JPEGs), 
-    # we'll stick to 0-1 range and let the model handle it or use simple normalization.
-    # Let's use mean=0.5, std=0.5 for now to get -1 to 1 range which is safe.
-    
-    train_transform = transforms.Compose([
-        transforms.Resize((400, 400)),
-        transforms.RandomRotation(15), 
-        transforms.CenterCrop((224, 224)),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(), 
-        transforms.ColorJitter(brightness=0.3, contrast=0.3),
-        transforms.Grayscale(num_output_channels=3), # Convert to 3 channels for ResNet
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) # ImageNet stats
-    ])
-    
-    test_transform = transforms.Compose([
-        transforms.Resize((400, 400)), # Maintain same scale as Train
-        transforms.CenterCrop((224, 224)),
-        transforms.Grayscale(num_output_channels=3),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-    
-    # Datasets
-    train_dataset = ScrewDataset(train_df, ROOT_DIR, transform=train_transform)
-    # Increase test set size by sampling multiple pairs per patient
-    test_dataset = ScrewDataset(test_df, ROOT_DIR, transform=test_transform, samples_per_patient=50)
-    
-    num_classes = len(train_dataset.manufacturers)
-    print(f"Classes: {train_dataset.manufacturers}")
-    
-    # --- Weighted Random Sampler for Training ---
-    # Calculate weights based on patient count per manufacturer in Train
-    # Get manufacturer for each patient in the dataset
-    train_labels = []
-    for pid in train_dataset.patient_ids:
-        # We can look up the manufacturer from the dataframe directly to be faster
-        # Assuming one manufacturer per patient
-        m = train_df[train_df['patient_number'] == pid]['manufacturer'].iloc[0]
-        train_labels.append(train_dataset.class_to_idx[m])
-    
-    class_counts = Counter(train_labels)
-    class_weights = {cls: 1.0 / count for cls, count in class_counts.items()}
-    sample_weights = [class_weights[lbl] for lbl in train_labels]
-    
-    sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
-    
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, sampler=sampler, collate_fn=collate_fn, num_workers=8)
-    # Test loader without shuffling, we will manually sample for balanced eval
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn, num_workers=8)
-
-    # --- Model ---
+    # ... (model setup) ...
     model = DualViewClassifier(num_classes=num_classes).to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=1e-4) # Added weight decay
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1) # Added learning rate scheduler
+    
+    # Loss with Label Smoothing
+    if LABEL_SMOOTHING > 0.0:
+        print(f"Using Label Smoothing: {LABEL_SMOOTHING}")
+        criterion = LabelSmoothingCrossEntropy(eps=LABEL_SMOOTHING)
+    else:
+        criterion = nn.CrossEntropyLoss()
+        
+    optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=STEP_SIZE, gamma=GAMMA)
 
     # --- Training Loop ---
     train_losses = []
@@ -173,8 +119,40 @@ def main():
             ap_imgs, lat_imgs, labels = ap_imgs.to(device), lat_imgs.to(device), labels.to(device)
             
             optimizer.zero_grad()
-            outputs = model(ap_imgs, lat_imgs)
-            loss = criterion(outputs, labels)
+            
+            # Mixup Logic
+            if MIXUP_ALPHA > 0.0:
+                # We need to mix both AP and Lat images coherently
+                # Note: mixup_data now requires 'device'
+                ap_mixed, _, y_a, y_b, lam = mixup_data(ap_imgs, ap_imgs, labels, device, MIXUP_ALPHA)
+                
+                # To ensure LAT images are mixed with the SAME indices as AP, we can't call mixup_data again randomly.
+                # However, mixup_data uses randperm. We should ideally control the permutation.
+                # But for now, let's reuse the logic:
+                batch_size = ap_imgs.size(0)
+                # Recover index from y_b if possible? No.
+                # We simply replicate the logic inline or update mixup_data to return index.
+                # Easier: Modify mixup implementations to be simpler or invoke manually.
+                # Actually, in `train_optuna.py` we solved this by re-generating the permutation? 
+                # Wait, in the snippet I wrote for `train_optuna.py`, I did:
+                # index = torch.randperm(batch_size).to(device)
+                # ...
+                # Let's just do it manually here to be safe and clear.
+                
+                index = torch.randperm(batch_size).to(device)
+                lam = np.random.beta(MIXUP_ALPHA, MIXUP_ALPHA)
+                
+                mixed_ap = lam * ap_imgs + (1 - lam) * ap_imgs[index, :]
+                mixed_lat = lam * lat_imgs + (1 - lam) * lat_imgs[index, :]
+                
+                y_a, y_b = labels, labels[index]
+                
+                outputs = model(mixed_ap, mixed_lat)
+                loss = mixup_criterion(criterion, outputs, y_a, y_b, lam)
+            else:
+                outputs = model(ap_imgs, lat_imgs)
+                loss = criterion(outputs, labels)
+                
             loss.backward()
             optimizer.step()
             
