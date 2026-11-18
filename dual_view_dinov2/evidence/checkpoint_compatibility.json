@@ -1,0 +1,11 @@
+{
+  "checkpoint": "dinov2_dual_view.pth",
+  "sha256": "73ddd94b7ec9bc55eead519e4b1f1680c1542357cbfcf24ed1a09494416ee4f5",
+  "architecture": "DINOv2 ViT-S/14, shared backbone, 768 to 512 to 4 fusion head",
+  "strict_load": true,
+  "real_crop_pairs_checked": 2,
+  "historical_implementation_predictions_exactly_equal": true,
+  "finite_logits": true,
+  "historical_accuracy_attribution": "January checkpoint; separate from the March run. Fresh November 18 diagnostic recorded in local_dual_evaluation.json.",
+  "torch_version": "2.9.1"
+}

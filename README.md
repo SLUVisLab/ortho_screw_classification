@@ -1,5 +1,7 @@
 # Orthopedic Screw Classification Benchmark
 
+For the current dual-view DINOv2 handoff, start with [dual_view_dinov2](dual_view_dinov2/README.md). It includes training and inference commands, checkpoint compatibility, the recovered run metrics, and reproduction notes.
+
 This repository contains code to train and benchmark three different approaches for classifying orthopedic screws from dual-view X-rays (AP and Lateral).
 
 ## Approaches
